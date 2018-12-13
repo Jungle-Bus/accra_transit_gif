@@ -13,8 +13,8 @@ from shapely.ops import cascaded_union
 import transit_to_gif_handlers
 
 
-url_source = 'http://download.geofabrik.de/africa/ghana.osh.pbf'
-dest_file = './ghana.osh.pbf'
+url_source = 'http://download.geofabrik.de/africa/ghana-latest.osm.pbf'
+dest_file = './data/ghana.osh.pbf'
 
 if not os.path.isfile(dest_file):
     print("Downloading {}".format(dest_file))
@@ -28,7 +28,7 @@ else:
 
 #===============================================
 #              Load Stops
-stops_file = './stops.csv'
+stops_file = './data/stops.csv'
 stops = []
 if not os.path.isfile(stops_file):
     print("Le fichier {} n'existe pas, lancement du traitement".format(stops_file))
@@ -53,7 +53,7 @@ if not os.path.isfile(stops_file):
             }
         stops.append(s)
 
-    pd.DataFrame.from_dict(stops).to_csv('./stops.csv')
+    pd.DataFrame.from_dict(stops).to_csv('./data/stops.csv')
 else:
     print("Le fichier {} existe, chargement depuis le fichier".format(stops_file))
 stops = pd.read_csv(stops_file, parse_dates=["creation_date"]).to_dict(orient="records")
@@ -61,7 +61,7 @@ print('fin de chargement des stops : {:d}'.format(len(stops)))
 
 #===============================================
 #              Load Relations
-routes_file1 = "./routes.csv"
+routes_file1 = "./data/routes.csv"
 routes = []
 routes_all_ways = []
 if not os.path.isfile(routes_file1):
@@ -87,7 +87,7 @@ if not os.path.isfile(routes_file1):
 
     #il faut ensuite charger les dernières versions des ways utilisés par les relations pour avoir la géometrie
     pd_routes = pd.DataFrame.from_dict(routes)
-    pd_routes.to_csv('./routes.csv')
+    pd_routes.to_csv('./data/routes.csv')
 else:
     print("Le fichier {} existe, chargement depuis le fichier".format(routes_file1))
 routes = pd.read_csv(routes_file1, parse_dates=["creation_date"]).to_dict(orient="records")
@@ -98,7 +98,13 @@ for r in routes:
     ways = [int(i) for i in ways if i]
     r["last_ways"] = ways
     routes_all_ways.extend(ways)
-print('fin de chargement des relations : {:d} (dont {:d} références de ways)'.format(len(routes), len(routes_all_ways)))
+
+# text = 'fin de chargement des relations : {:d} (dont {:d} références de ways)'.format(
+#     len(routes),
+#     len(routes_all_ways)
+# )
+# print(str(text, 'utf-8'))
+print('fin de chargement des relations : {:d} (dont {:d} references de ways)'.format(len(routes), len(routes_all_ways)))
 
 
 #===============================================
@@ -122,7 +128,7 @@ for w in ways:
     points = [int(i) for i in points if i]
     ways_all_nodes.extend(points)
     w["nodes_ref"] = points
-print("Chargement des ways terminé : {:d}".format(len(ways)))
+print("Chargement des ways termine : {:d}".format(len(ways)))
 print("nombre de refs de node : {:d}".format(len(ways_all_nodes)))
 
 
@@ -133,11 +139,11 @@ ways_all_nodes = set(ways_all_nodes)
 routes_handler3 = transit_to_gif_handlers.NodeHandler(ways_all_nodes)
 routes_handler3.apply_file(dest_file)
 nodes = routes_handler3.nodes
-print("Chargement des nodes terminé : {:d}".format(len(nodes)))
+print("Chargement des nodes termine : {:d}".format(len(nodes)))
 
 
 #===============================================
-print("Construction des géometries des ways")
+print("Construction des geometries des ways")
 for w in ways:
     w_nodes = []
     for wn in w["nodes_ref"]:
@@ -147,7 +153,7 @@ for w in ways:
     w["geom"] = LineString(w_nodes)
 
 #===============================================
-print("Construction des géometries des relations")
+print("Construction des geometries des relations")
 for r in routes:
     r_ways = []
     r_ways_geom = []
@@ -178,7 +184,7 @@ def show_date_on_image(image_path, date_to_display, nb_stops, nb_routes):
     text_border = 5
     text_length = 460
     text_size = 24
-    font = ImageFont.truetype('Pillow/Tests/fonts/LiberationMono-Bold.ttf', text_size)
+    font = ImageFont.truetype('./liberation-fonts-ttf-1.07.5/LiberationMono-Bold.ttf', text_size)
     draw.rectangle([
         text_offset[0] - text_border,
         text_offset[1] - text_border,
@@ -192,7 +198,7 @@ def show_date_on_image(image_path, date_to_display, nb_stops, nb_routes):
     text_border = 4
     text_length = 119
     text_size = 20
-    font = ImageFont.truetype('Pillow/Tests/fonts/LiberationMono-Bold.ttf', text_size)
+    font = ImageFont.truetype('./liberation-fonts-ttf-1.07.5/LiberationMono-Bold.ttf', text_size)
     draw.rectangle([
         text_offset[0] - text_border,
         text_offset[1] - text_border,
@@ -205,7 +211,7 @@ def show_date_on_image(image_path, date_to_display, nb_stops, nb_routes):
     text_border = 2
     text_length = 230
     text_size = 14
-    font = ImageFont.truetype('Pillow/Tests/fonts/LiberationMono-Bold.ttf', text_size)
+    font = ImageFont.truetype('./liberation-fonts-ttf-1.07.5/LiberationMono-Bold.ttf', text_size)
     draw.rectangle([
         text_offset[0] - text_border,
         text_offset[1] - text_border,
@@ -219,7 +225,7 @@ def show_date_on_image(image_path, date_to_display, nb_stops, nb_routes):
     text_border = 2
     text_length = 230
     text_size = 14
-    font = ImageFont.truetype('Pillow/Tests/fonts/LiberationMono-Bold.ttf', text_size)
+    font = ImageFont.truetype('./liberation-fonts-ttf-1.07.5/LiberationMono-Bold.ttf', text_size)
     draw.rectangle([
         text_offset[0] - text_border,
         text_offset[1] - text_border,
@@ -239,7 +245,7 @@ m = folium.Map(location=[5.6204,-0.2125], zoom_start=12,
     max_zoom=12, min_zoom=12,
     attr=attributions, tiles=tiles, png_enabled=True)
 
-img_tmp_dir = './tmp_images'
+img_tmp_dir = './data/tmp_images'
 if os.path.exists(img_tmp_dir):
     shutil.rmtree(img_tmp_dir)
 os.makedirs(img_tmp_dir)
@@ -274,12 +280,12 @@ while date_cursor <= end_date:
     date_cursor = date_cursor + datetime.timedelta(days=delta_days)
 
 #===============================================
-print("Création du GIF")
+print("Creation du GIF")
 import imageio
 
 file_names = sorted((os.path.join(img_tmp_dir, fn) for fn in os.listdir(img_tmp_dir) if fn.endswith('.png')))
 
-with imageio.get_writer('Accra_Ghana_Transit_data_creation.gif', mode='I', duration=0.4) as writer:
+with imageio.get_writer('data/Accra_Ghana_Transit_data_creation.gif', mode='I', duration=0.4) as writer:
     for filename in file_names:
         image = imageio.imread(filename)
         writer.append_data(image)

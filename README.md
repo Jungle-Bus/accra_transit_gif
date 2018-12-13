@@ -15,3 +15,9 @@ To use this tool, you need :
 
 ## How to run
 To run this tool, execute this command line `python3 transit_to_gif.py`.
+
+# How to run with docker
+* prepare "accra_transit_gif" image : `docker build -f Dockerfile -t accra_transit_gif .`
+* run the program : `docker run --rm -v /absolute/path/to/./data:/data accra_transit_gif`
+
+To use a command line inside the container : `docker run --rm -it -v /absolute/path/to/./data:/data accra_transit_gif bash`
