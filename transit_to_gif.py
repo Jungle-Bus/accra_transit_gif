@@ -11,20 +11,14 @@ import pandas as pd
 from shapely.geometry import LineString, MultiLineString
 from shapely.ops import cascaded_union
 import transit_to_gif_handlers
+import time
 
 
-url_source = 'http://download.geofabrik.de/africa/ghana-latest.osm.pbf'
-dest_file = './data/ghana.osh.pbf'
-
-if not os.path.isfile(dest_file):
-    print("Downloading {}".format(dest_file))
-    with open(dest_file, "wb") as file:
-        r = requests.get(url_source)
-        file.write(r.content)
-    print("Downloaded !")
-else:
-    print("File {} already exists".format(dest_file))
-
+osm_file = './data/ghana-internal.osh.pbf'
+start_date = datetime.datetime.strptime('2017-07-15', '%Y-%m-%d')
+end_date = datetime.datetime.strptime('2017-09-06', '%Y-%m-%d')
+delta_days = 1
+img_tmp_dir = './data/tmp_images'
 
 #===============================================
 #              Load Stops
@@ -33,7 +27,7 @@ stops = []
 if not os.path.isfile(stops_file):
     print("Le fichier {} n'existe pas, lancement du traitement".format(stops_file))
     stops_handler = transit_to_gif_handlers.StopsHandler()
-    stops_handler.apply_file(dest_file)
+    stops_handler.apply_file(osm_file)
 
     #on charge dans stops les données finales, avec la 1ère date de modification après le 1er juillet 2017
     #et le dernier nom et la dernière position connus
@@ -67,7 +61,7 @@ routes_all_ways = []
 if not os.path.isfile(routes_file1):
     print("Le fichier {} n'existe pas, lancement de la lecture des relations".format(routes_file1))
     routes_handler = transit_to_gif_handlers.RelationHandler()
-    routes_handler.apply_file(dest_file)
+    routes_handler.apply_file(osm_file)
 
     for k,v in routes_handler.routes.items():
         min_version = min(v["version"])
@@ -109,13 +103,13 @@ print('fin de chargement des relations : {:d} (dont {:d} references de ways)'.fo
 
 #===============================================
 #              Load Ways
-ways_file = "./ways.csv"
+ways_file = "./data/ways.csv"
 ways_all_nodes = []
 routes_all_ways = set(routes_all_ways) #utilisation d'un set pour sacrément accélerer la vérif de présence d'un item /!\
 if not os.path.isfile(ways_file):
     print("Le fichier {} n'existe pas, lancement de la lecture des ways".format(ways_file))
     way_handler = transit_to_gif_handlers.WayHandler(routes_all_ways)
-    way_handler.apply_file(dest_file)
+    way_handler.apply_file(osm_file)
     print("Ecriture du fichier {}".format(ways_file))
     ways = [w for w in way_handler.ways.values()]
     pd.DataFrame.from_dict(ways).to_csv(ways_file)
@@ -137,7 +131,7 @@ print("nombre de refs de node : {:d}".format(len(ways_all_nodes)))
 #pas de sauvegarde fichier pour les nodes, le chargement est rapide
 ways_all_nodes = set(ways_all_nodes)
 routes_handler3 = transit_to_gif_handlers.NodeHandler(ways_all_nodes)
-routes_handler3.apply_file(dest_file)
+routes_handler3.apply_file(osm_file)
 nodes = routes_handler3.nodes
 print("Chargement des nodes termine : {:d}".format(len(nodes)))
 
@@ -168,12 +162,53 @@ for r in routes:
 
 
 #===============================================
-print("Chargement de la carte")
+print("Chargement des cartes HTML")
 import folium
 from folium.plugins import MarkerCluster
+
+if os.path.exists(img_tmp_dir):
+    shutil.rmtree(img_tmp_dir)
+os.makedirs(img_tmp_dir)
+
+attributions = "cartodb | © OpenStreetMap"
+tiles = 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png'
+m = folium.Map(location=[5.6204,-0.2125], zoom_start=12,
+    max_zoom=12, min_zoom=12,
+    attr=attributions,
+    tiles=tiles)
+
+
+date_cursor = start_date
+for r in routes:
+    r["displayed"] = False
+for s in stops:
+    s["displayed"] = False
+nb_routes_displayed = 0
+nb_stops_displayed = 0
+while date_cursor <= end_date:
+    for r in routes:
+        if not r["displayed"] and r["creation_date"] < pd.to_datetime(date_cursor):
+            folium.PolyLine(r["geom_raw"], color="#1779c2", weight=1.5, opacity=1).add_to(m)
+            r["displayed"] = True
+            nb_routes_displayed += 1
+    for s in stops:
+        if not s["displayed"] and s["creation_date"] < pd.to_datetime(date_cursor):
+            s["displayed"] = True
+            folium.Circle([s["last_lat"], s["last_lon"]], radius=2.5, color="#1779c2", opacity=1).add_to(m)
+            nb_stops_displayed += 1
+    print("Enregistrement de la carte pour la date du {}".format(date_cursor.strftime('%Y-%m-%d')))
+    image_path = os.path.join(img_tmp_dir, "image_{}.png".format(date_cursor.strftime('%Y-%m-%d')))
+    m.save(image_path+".html")
+    date_cursor = date_cursor + datetime.timedelta(days=delta_days)
+
+#===============================================
+print("Creation des fichiers PNG avec selenium et enrichissement des images")
+import selenium
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
 
 def show_date_on_image(image_path, date_to_display, nb_stops, nb_routes):
     print("modification de l'image")
@@ -239,45 +274,24 @@ def show_date_on_image(image_path, date_to_display, nb_stops, nb_routes):
     img.close()
     img_croped.save(image_path)
 
-attributions = "cartodb | © OpenStreetMap"
-tiles = 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png'
-m = folium.Map(location=[5.6204,-0.2125], zoom_start=12,
-    max_zoom=12, min_zoom=12,
-    attr=attributions, tiles=tiles, png_enabled=True)
 
-img_tmp_dir = './data/tmp_images'
-if os.path.exists(img_tmp_dir):
-    shutil.rmtree(img_tmp_dir)
-os.makedirs(img_tmp_dir)
-
-start_date = datetime.datetime.strptime('2017-07-15', '%Y-%m-%d')
-end_date = datetime.datetime.strptime('2017-09-06', '%Y-%m-%d')
-delta_days = 1
+os.environ['MOZ_HEADLESS'] = '1'
 date_cursor = start_date
-for r in routes:
-    r["displayed"] = False
-for s in stops:
-    s["displayed"] = False
-nb_routes_displayed = 0
-nb_stops_displayed = 0
 while date_cursor <= end_date:
-    for r in routes:
-        if not r["displayed"] and r["creation_date"] < pd.to_datetime(date_cursor):
-            folium.PolyLine(r["geom_raw"], color="#1779c2", weight=1.5, opacity=1).add_to(m)
-            r["displayed"] = True
-            nb_routes_displayed += 1
-    for s in stops:
-        if not s["displayed"] and s["creation_date"] < pd.to_datetime(date_cursor):
-            s["displayed"] = True
-            folium.Circle([s["last_lat"], s["last_lon"]], radius=2.5, color="#1779c2", opacity=1).add_to(m)
-            nb_stops_displayed += 1
-    print("Enregistrement de la carte pour la date du {}".format(date_cursor.strftime('%Y-%m-%d')))
     image_path = os.path.join(img_tmp_dir, "image_{}.png".format(date_cursor.strftime('%Y-%m-%d')))
-    with open(image_path, "wb")  as image_file:
-        m._png_image = None #on réinitialise le PNG
-        image_file.write(m._to_png())
+    # https://github.com/mozilla/geckodriver/releases/download/v0.24.0/geckodriver-v0.24.0-linux64.tar.gz
+    driver = webdriver.Firefox()
+    driver.set_window_size(1360, 768)  # choose a resolution
+    driver.get("file://" + os.path.realpath(image_path+".html"))
+
+    # You may need to add time.sleep(seconds) here
+    time.sleep(2)
+    # element = WebDriverWait(driver, 10)
+    driver.save_screenshot(image_path)
+    driver.close()
     show_date_on_image(image_path, date_cursor, nb_stops_displayed, nb_routes_displayed)
     date_cursor = date_cursor + datetime.timedelta(days=delta_days)
+
 
 #===============================================
 print("Creation du GIF")

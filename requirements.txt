@@ -1,6 +1,6 @@
 osmium==2.15.0
 pandas==0.23.4
-branca==0.2.0
+branca==0.3.0
 six==1.11.0
 idna==2.6
 certifi==2017.7.27.1
@@ -9,7 +9,7 @@ pytz==2017.2
 numpy==1.15.3
 chardet==3.0.4
 pillow==4.3.0
-folium==0.5.0
+folium==0.6.0
 olefile==0.44
 jinja2==2.9.6
 shapely==1.6.4.post2
