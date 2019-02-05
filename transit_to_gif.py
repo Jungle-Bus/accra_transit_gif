@@ -93,11 +93,6 @@ for r in routes:
     r["last_ways"] = ways
     routes_all_ways.extend(ways)
 
-# text = 'fin de chargement des relations : {:d} (dont {:d} références de ways)'.format(
-#     len(routes),
-#     len(routes_all_ways)
-# )
-# print(str(text, 'utf-8'))
 print('fin de chargement des relations : {:d} (dont {:d} references de ways)'.format(len(routes), len(routes_all_ways)))
 
 
