@@ -1,6 +1,3 @@
 __pycache__
-*.jpeg
-*.csv
-tmp_images
-*.pbf
-*.png
+data/*
+!data/.placeholder
