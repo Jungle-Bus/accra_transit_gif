@@ -16,6 +16,7 @@ import time
 
 osm_file = './data/ghana-internal.osh.pbf'
 start_date = datetime.datetime.strptime('2017-07-15', '%Y-%m-%d')
+start_date = datetime.datetime.strptime('2017-09-05', '%Y-%m-%d')
 end_date = datetime.datetime.strptime('2017-09-06', '%Y-%m-%d')
 delta_days = 1
 img_tmp_dir = './data/tmp_images'
@@ -51,7 +52,7 @@ if not os.path.isfile(stops_file):
 else:
     print("Le fichier {} existe, chargement depuis le fichier".format(stops_file))
 stops = pd.read_csv(stops_file, parse_dates=["creation_date"]).to_dict(orient="records")
-print('fin de chargement des stops : {:d}'.format(len(stops)))
+print('Fin de chargement des stops : {:d}'.format(len(stops)))
 
 #===============================================
 #              Load Relations
@@ -93,7 +94,7 @@ for r in routes:
     r["last_ways"] = ways
     routes_all_ways.extend(ways)
 
-print('fin de chargement des relations : {:d} (dont {:d} references de ways)'.format(len(routes), len(routes_all_ways)))
+print('Fin de chargement des relations : {:d} (dont {:d} references de ways)'.format(len(routes), len(routes_all_ways)))
 
 
 #===============================================
@@ -117,8 +118,8 @@ for w in ways:
     points = [int(i) for i in points if i]
     ways_all_nodes.extend(points)
     w["nodes_ref"] = points
-print("Chargement des ways termine : {:d}".format(len(ways)))
-print("nombre de refs de node : {:d}".format(len(ways_all_nodes)))
+print("Chargement des ways terminé : {:d}".format(len(ways)))
+print("Nombre de refs de node : {:d}".format(len(ways_all_nodes)))
 
 
 #===============================================
@@ -128,11 +129,11 @@ ways_all_nodes = set(ways_all_nodes)
 routes_handler3 = transit_to_gif_handlers.NodeHandler(ways_all_nodes)
 routes_handler3.apply_file(osm_file)
 nodes = routes_handler3.nodes
-print("Chargement des nodes termine : {:d}".format(len(nodes)))
+print("Chargement des nodes terminé : {:d}".format(len(nodes)))
 
 
 #===============================================
-print("Construction des geometries des ways")
+print("Construction des géometries des ways")
 for w in ways:
     w_nodes = []
     for wn in w["nodes_ref"]:
@@ -142,7 +143,7 @@ for w in ways:
     w["geom"] = LineString(w_nodes)
 
 #===============================================
-print("Construction des geometries des relations")
+print("Construction des géometries des relations")
 for r in routes:
     r_ways = []
     r_ways_geom = []
@@ -197,7 +198,7 @@ while date_cursor <= end_date:
     date_cursor = date_cursor + datetime.timedelta(days=delta_days)
 
 #===============================================
-print("Creation des fichiers PNG avec selenium et enrichissement des images")
+print("Création des fichiers PNG avec selenium et enrichissement des images")
 import selenium
 from PIL import Image
 from PIL import ImageFont
@@ -289,7 +290,7 @@ while date_cursor <= end_date:
 
 
 #===============================================
-print("Creation du GIF")
+print("Création du GIF")
 import imageio
 
 file_names = sorted((os.path.join(img_tmp_dir, fn) for fn in os.listdir(img_tmp_dir) if fn.endswith('.png')))

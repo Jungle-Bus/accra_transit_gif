@@ -3,7 +3,10 @@ FROM ubuntu:latest
 RUN apt-get update
 RUN apt-get install -y libfreetype6 libfreetype6-dev  \
                     libfontconfig1 libfontconfig1-dev \
-                    libexpat1-dev zlib1g-dev libbz2-dev wget python3-pip libbz2-dev
+                    libexpat1-dev zlib1g-dev libbz2-dev wget python3-pip libbz2-dev locales
+
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
 
 #=========
 # Firefox
