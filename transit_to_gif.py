@@ -18,7 +18,7 @@ import time
 #              Load configurations
 
 config = configparser.ConfigParser()
-config_file = "./data/config.ini"
+config_file = "./config/config.ini"
 if not os.path.isfile(config_file):
     print("Le fichier de config n'existe pas")
     # TODO : raise ?
@@ -35,6 +35,7 @@ end_date = datetime.datetime.strptime(end_date_config, '%Y-%m-%d')
 delta_days = int(config['temporal'].get('DeltaDays', 1))
 
 img_title = config['img'].get('Title', "OpenStreetMap bus routes in Accra")
+output_file_name = './data/' + config['img'].get('OutputFileName', "Accra_Ghana_Transit_data_creation.gif")
 
 img_tmp_dir = './data/tmp_images'
 
@@ -311,7 +312,7 @@ import imageio
 
 file_names = sorted((os.path.join(img_tmp_dir, fn) for fn in os.listdir(img_tmp_dir) if fn.endswith('.png')))
 
-with imageio.get_writer('data/output.gif', mode='I', duration=0.4) as writer:
+with imageio.get_writer(output_file_name, mode='I', duration=0.4) as writer:
     for filename in file_names:
         image = imageio.imread(filename)
         writer.append_data(image)
