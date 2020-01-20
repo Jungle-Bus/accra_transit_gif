@@ -46,6 +46,7 @@ RUN pip3 install -r /requirements.txt
 
 COPY transit_to_gif.py /transit_to_gif.py
 COPY transit_to_gif_handlers.py /transit_to_gif_handlers.py
+COPY config/config.ini /config/config.ini
 
 VOLUME [ "/data" ]
 WORKDIR /

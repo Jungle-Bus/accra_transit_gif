@@ -6,6 +6,7 @@ import os
 import requests
 import shutil
 import datetime
+import configparser
 import osmium
 import pandas as pd
 from shapely.geometry import LineString, MultiLineString
@@ -13,12 +14,29 @@ from shapely.ops import cascaded_union
 import transit_to_gif_handlers
 import time
 
+#===============================================
+#              Load configurations
 
-osm_file = './data/ghana-internal.osh.pbf'
-start_date = datetime.datetime.strptime('2017-07-15', '%Y-%m-%d')
-start_date = datetime.datetime.strptime('2017-09-05', '%Y-%m-%d')
-end_date = datetime.datetime.strptime('2017-09-06', '%Y-%m-%d')
-delta_days = 1
+config = configparser.ConfigParser()
+config_file = "./config/config.ini"
+if not os.path.isfile(config_file):
+    print("Le fichier de config n'existe pas")
+    # TODO : raise ?
+config.read(config_file)
+
+osm_file = './data/' + config['geo'].get('OSMFile', 'ghana-internal.osh.pbf')
+map_center_config = config['geo'].get('MapCenter', "5.6204/-0.2125").split("/")
+map_center =  [float(elem) for elem in map_center_config]
+
+start_date_config =  config['temporal'].get('StartDate', "2017-09-05")
+end_date_config =  config['temporal'].get('EndDate', "2017-09-06")
+start_date = datetime.datetime.strptime(start_date_config, '%Y-%m-%d')
+end_date = datetime.datetime.strptime(end_date_config, '%Y-%m-%d')
+delta_days = int(config['temporal'].get('DeltaDays', 1))
+
+img_title = config['img'].get('Title', "OpenStreetMap bus routes in Accra")
+output_file_name = './data/' + config['img'].get('OutputFileName', "Accra_Ghana_Transit_data_creation.gif")
+
 img_tmp_dir = './data/tmp_images'
 
 #===============================================
@@ -168,7 +186,7 @@ os.makedirs(img_tmp_dir)
 
 attributions = "cartodb | © OpenStreetMap"
 tiles = 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png'
-m = folium.Map(location=[5.6204,-0.2125], zoom_start=12,
+m = folium.Map(location=map_center, zoom_start=12,
     max_zoom=12, min_zoom=12,
     attr=attributions,
     tiles=tiles)
@@ -222,8 +240,7 @@ def show_date_on_image(image_path, date_to_display, nb_stops, nb_routes):
         text_offset[0] + text_border + text_length,
         text_offset[1] + text_border + text_size
         ], fill='#858687')
-    text_to_display = "OpenStreetMap bus routes in Accra"
-    draw.text((text_offset[0], text_offset[1]), text_to_display,'#000000',font=font)
+    draw.text((text_offset[0], text_offset[1]), img_title,'#000000',font=font)
     # Affichage de la date
     text_offset = [img.size[0] - 400, img.size[1] - 50]
     text_border = 4
@@ -295,7 +312,7 @@ import imageio
 
 file_names = sorted((os.path.join(img_tmp_dir, fn) for fn in os.listdir(img_tmp_dir) if fn.endswith('.png')))
 
-with imageio.get_writer('data/Accra_Ghana_Transit_data_creation.gif', mode='I', duration=0.4) as writer:
+with imageio.get_writer(output_file_name, mode='I', duration=0.4) as writer:
     for filename in file_names:
         image = imageio.imread(filename)
         writer.append_data(image)
