@@ -8,7 +8,7 @@ selenium==3.6.0
 pytz==2017.2
 numpy==1.15.3
 chardet==3.0.4
-pillow==6.2.0
+pillow==7.1.1
 folium==0.6.0
 olefile==0.44
 jinja2==2.10.1
